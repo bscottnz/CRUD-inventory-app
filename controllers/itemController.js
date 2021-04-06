@@ -34,12 +34,35 @@ exports.item_create_post = (req, res) => {
 
 // display item delete form on GET
 exports.item_delete_get = (req, res) => {
-  res.send('NOT IMPLEMENTED: Item delete GET');
+  // res.send('NOT IMPLEMENTED: Item delete GET');
+  Item.findById(req.params.id).exec((err, results) => {
+    if (err) {
+      return next(err);
+    }
+    if (results == null) {
+      res.redirect('/fridge');
+    }
+
+    res.render('itemDelete', { item: results });
+  });
 };
 
 // handle item delete on POST
 exports.item_delete_post = (req, res) => {
-  res.send('NOT IMPLEMENTED: Item delete POST');
+  // res.send('NOT IMPLEMENTED: Item delete POST');
+
+  Item.findById(req.body.itemid)
+    .populate('category')
+    .exec((err, results) => {
+      const URL = results.category.url;
+      // this should be refactored so that it is not nesting callbacks. maybe use async/await or async waterfall
+      Item.findByIdAndRemove(req.body.itemid, function deleteItem(err, doc) {
+        if (err) {
+          return next(err);
+        }
+        res.redirect(URL);
+      });
+    });
 };
 
 // display item update form on GET

@@ -101,12 +101,68 @@ exports.category_create_post = [
 
 // display category delete form on GET
 exports.category_delete_get = (req, res) => {
-  res.send('NOT IMPLEMENTED: Category delete GET');
+  // res.send('NOT IMPLEMENTED: Category delete GET');
+  async.parallel(
+    {
+      category: function (callback) {
+        Category.findById(req.params.id).exec(callback);
+      },
+      category_items: function (callback) {
+        Item.find({ category: req.params.id }).exec(callback);
+      },
+    },
+    function (err, results) {
+      if (err) {
+        return next(err);
+      }
+      if (results.category == null) {
+        // no category
+        res.redirect('/fridge');
+      }
+      // successful so render
+      res.render('categoryDelete', {
+        category: results.category,
+        category_items: results.category_items,
+      });
+    }
+  );
 };
 
 // handle category delete on POST
 exports.category_delete_post = (req, res) => {
-  res.send('NOT IMPLEMENTED: Category delete POST');
+  // res.send('NOT IMPLEMENTED: Category delete POST');
+  async.parallel(
+    {
+      category: function (callback) {
+        Category.findById(req.body.categoryid).exec(callback);
+      },
+      category_items: function (callback) {
+        Item.find({ category: req.body.categoryid }).exec(callback);
+      },
+    },
+    function (err, results) {
+      if (err) {
+        return next(err);
+      }
+      // success
+      if (results.category_items.length > 0) {
+        // category has items, render in same way as for GET route
+        res.render('categoryDelete', {
+          category: results.category,
+          category_items: results.category_items,
+        });
+      } else {
+        // category has no items, delete object and redirect to home page
+        Category.findByIdAndRemove(req.body.categoryid, function deleteCategory(err) {
+          if (err) {
+            return next(err);
+          }
+          //success - got to home page
+          res.redirect('/');
+        });
+      }
+    }
+  );
 };
 
 // display category update form on GET
