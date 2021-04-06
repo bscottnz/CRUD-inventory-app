@@ -55,7 +55,7 @@ exports.item_delete_post = (req, res) => {
     .populate('category')
     .exec((err, results) => {
       const URL = results.category.url;
-      // this should be refactored so that it is not nesting callbacks. maybe use async/await or async waterfall
+      // this should be refactored so that it is not nesting callbacks. maybe use async waterfall
       Item.findByIdAndRemove(req.body.itemid, function deleteItem(err, doc) {
         if (err) {
           return next(err);
