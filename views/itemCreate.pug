@@ -1,0 +1,26 @@
+extends layout
+
+block content
+  h1 Create New Item
+  form(method='POST' action='')
+    div.form-group
+      label(for='name') Name:
+      input(type='text' placeholder='Enter Item Name' name='name' required)
+
+    div.form-group
+      label(for='description') Description:
+      input(type='text' placeholder='Enter Description' name='description' required)
+
+    div.form-group
+      label(for='category') Category:
+      select#author.form-control(type='select', placeholder='Select category' name='category' required='true' )
+        - category_list.sort(function(a, b) {let textA = a.name.toUpperCase(); let textB = b.name.toUpperCase(); return (textA < textB) ? -1 : (textA > textB) ? 1 : 0;});
+        option(value='') Select a category:
+        for category in category_list
+          option(value=category._id) #{category.name}
+
+    div.form-group
+      label(for='quantity') Quantity:
+      input(type='number' name='quantity' min='0' required)
+    
+    button(type='submit') Add Item

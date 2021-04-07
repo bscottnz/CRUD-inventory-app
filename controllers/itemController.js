@@ -1,4 +1,5 @@
 const Item = require('../models/item');
+const Category = require('../models/category');
 
 const async = require('async');
 const { body, validationResult } = require('express-validator');
@@ -24,13 +25,50 @@ exports.item_detail = (req, res) => {
 
 // display item create form on GET
 exports.item_create_get = (req, res) => {
-  res.send('NOT IMPLEMENTED: Item Create GET');
+  Category.find().exec((err, results) => {
+    // const category_names = results.map((category) => category.name);
+    res.render('itemCreate', { category_list: results });
+  });
 };
 
 // handle item create on POST
-exports.item_create_post = (req, res) => {
-  res.send('NOT IMPLEMENTED: Item Create POST');
-};
+exports.item_create_post = [
+  // res.send('NOT IMPLEMENTED: Item Create POST'),
+
+  // validate info
+
+  body('name', 'Name must not be empty').trim().isLength({ min: 1 }).escape(),
+  body('description', 'Description must not be empty').trim().isLength({ min: 1 }).escape(),
+
+  (req, res, next) => {
+    // extract errors
+    const errors = validationResult(req);
+
+    console.log(req.body);
+
+    // create new item
+    const item = new Item({
+      name: req.body.name,
+      description: req.body.description,
+      category: req.body.category,
+      stock: req.body.quantity,
+    });
+
+    if (!errors.isEmpty()) {
+      console.log(errors);
+      // no errors becuase all feilds are required in html. if i need to validate a feild server side,
+      // handle errors here by displaying message and rerendereing form, with pre populated feilds
+      // like in the create category post
+    } else {
+      item.save(function (err) {
+        if (err) {
+          return next(err);
+        }
+        res.redirect(item.url);
+      });
+    }
+  },
+];
 
 // display item delete form on GET
 exports.item_delete_get = (req, res) => {
