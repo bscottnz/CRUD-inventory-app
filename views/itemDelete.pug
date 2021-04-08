@@ -1,0 +1,18 @@
+extends layout
+
+block content
+  h1 Delete item: #{item.name}
+  h4= item.description
+
+  
+  p Do you really want to delete this item?
+
+  form(method='POST' action='')
+    div.form-group
+      input#itemid.form-control(type='hidden',name='itemid', required='true', value=item._id )
+      p Enter password to delete item
+      input(type=text name='password')
+
+    button.btn.btn-primary(type='submit') Delete
+  if wrongpass
+    p #[strong Wrong password!]
