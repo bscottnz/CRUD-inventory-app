@@ -1,5 +1,6 @@
 const Item = require('../models/item');
 const Category = require('../models/category');
+const unescape = require('../middleware/unescape-middleware');
 
 const async = require('async');
 const { body, validationResult } = require('express-validator');
@@ -39,6 +40,7 @@ exports.item_create_post = [
 
   body('name', 'Name must not be empty').trim().isLength({ min: 1 }).escape(),
   body('description', 'Description must not be empty').trim().isLength({ min: 1 }).escape(),
+  unescape('&#x27;', "'"),
 
   (req, res, next) => {
     // extract errors
@@ -89,26 +91,94 @@ exports.item_delete_get = (req, res) => {
 exports.item_delete_post = (req, res) => {
   // res.send('NOT IMPLEMENTED: Item delete POST');
 
-  Item.findById(req.body.itemid)
-    .populate('category')
-    .exec((err, results) => {
-      const URL = results.category.url;
-      // this should be refactored so that it is not nesting callbacks. maybe use async waterfall
-      Item.findByIdAndRemove(req.body.itemid, function deleteItem(err, doc) {
-        if (err) {
-          return next(err);
-        }
-        res.redirect(URL);
-      });
+  // check entered password before deleting item
+  if (req.body.password !== 'delete') {
+    Item.findById(req.body.itemid).exec((err, results) => {
+      if (err) {
+        return next(err);
+      }
+      if (results == null) {
+        res.redirect('/fridge');
+      }
+
+      res.render('itemDelete', { item: results, wrongpass: true });
     });
+  } else {
+    Item.findById(req.body.itemid)
+      .populate('category')
+      .exec((err, results) => {
+        const URL = results.category.url;
+        // this should be refactored so that it is not nesting callbacks. maybe use async waterfall
+        Item.findByIdAndRemove(req.body.itemid, function deleteItem(err, doc) {
+          if (err) {
+            return next(err);
+          }
+          res.redirect(URL);
+        });
+      });
+  }
 };
 
 // display item update form on GET
 exports.item_update_get = (req, res) => {
-  res.send('NOT IMPLEMENTED: Item update GET');
+  // res.send('NOT IMPLEMENTED: Item update GET');
+  async.parallel(
+    {
+      item: function (callback) {
+        Item.findById(req.params.id).populate('category').exec(callback);
+      },
+      categories: function (callback) {
+        Category.find(callback);
+      },
+    },
+    function (err, results) {
+      if (err) {
+        return next(err);
+      }
+      if (results.item == null) {
+        // No results.
+        var err = new Error('Item not found');
+        err.status = 404;
+        return next(err);
+      }
+
+      // success
+      res.render('itemCreate', { category_list: results.categories, item: results.item });
+    }
+  );
 };
 
 // handle item update on POST
-exports.item_update_post = (req, res) => {
-  res.send('NOT IMPLEMENTED: Item update POST');
-};
+
+exports.item_update_post = [
+  // res.send('NOT IMPLEMENTED: Item update POST');
+
+  body('name', 'Name must not be empty').trim().isLength({ min: 1 }).escape(),
+  body('description', 'Description must not be empty').trim().isLength({ min: 1 }).escape(),
+  unescape('&#x27;', "'"),
+  (req, res, next) => {
+    const errors = validationResult(req);
+
+    const item = new Item({
+      name: req.body.name,
+      description: req.body.description,
+      category: req.body.category,
+      stock: req.body.quantity,
+      _id: req.params.id,
+    });
+
+    if (!errors.isEmpty()) {
+      // will be no errors as form is validated client side.
+      // only using validator here to stip and sanatize
+      console.log(errors);
+    }
+
+    Item.findByIdAndUpdate(req.params.id, item, {}, function (err, theitem) {
+      if (err) {
+        return next(err);
+      }
+      // Successful - redirect to book detail page.
+      res.redirect(theitem.url);
+    });
+  },
+];

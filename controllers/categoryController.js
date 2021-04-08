@@ -1,5 +1,6 @@
 const Category = require('../models/category');
 const Item = require('../models/item');
+const unescape = require('../middleware/unescape-middleware');
 
 const async = require('async');
 const { body, validationResult } = require('express-validator');
@@ -61,6 +62,7 @@ exports.category_create_post = [
     .isLength({ min: 1 })
     .escape()
     .withMessage('Category description required.'),
+  unescape('&#x27;', "'"),
 
   // process request after validation and sanitization
   (req, res, next) => {
