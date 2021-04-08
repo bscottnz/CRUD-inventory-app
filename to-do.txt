@@ -1,5 +1,0 @@
-refactor item category property to use id references.
-
-delete catagories
-
-test
